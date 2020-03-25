@@ -332,7 +332,7 @@ As mentioned before, extra credit can be earned by going above and beyond on the
  
 ### Profile Page: 25 Points ###
 
-This would be a page that allows a logged in user to see information related to their account have a variety of settings or other information that could be updated. The settings or other information that can be updated is likely to be dependant on your particular project, but some general examples are the user’s email address, street address, or password. 
+This would be a page that allows a logged in user to see information related to their account have a variety of settings or other information that could be updated. The settings or other information that can be updated is likely to be dependent on your particular project, but some general examples are the user’s email address, street address, or password. 
 
 ### Password Resetting: 25 Points ###
 

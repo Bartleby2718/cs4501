@@ -12,16 +12,17 @@ Architecture
 There are three components to this project:
 
 1. Adding newly created listings to a Kafka queue
-2. A search indexer that takes new listings out of Kafka and indexing them into Elastic Search (ES)
+2. A search indexer that takes new listings out of Kafka and indexing them into ElasticSearch (ES)
 3. Extend the web front end and experience services to add a search result page (SRP) that queries ES
-4. Create a custom sesrch ranking function based on popularity of items.
+4. Create a custom search ranking function based on popularity of items.
 
 This project will also introduce the first part of your system that
 runs code outside of the context of a web request. Step two above,
 adding things to ES, will be a backend Python worker process that constantly
 runs pulling new listings out of Kafka and adding them to ES.
 
-The architecture is illutrated by this image: https://drive.google.com/file/d/0BwxFrbFICisjdUVzQURaTGFzX3c/view?usp=sharing
+The architecture is illutrated by this image:
+[![diagram](https://drive.google.com/uc?id=0BwxFrbFICisjdUVzQURaTGFzX3c)](https://drive.google.com/file/d/0BwxFrbFICisjdUVzQURaTGFzX3c/view)
 
 ### User Stories ###
 
@@ -46,7 +47,7 @@ listings. Second, it allows us to ingest LOTS of new listings even if
 ES can't keep up (or is down). Effecitvely Kafka acts like a buffer
 between creating listings and indexing listings.
 
-### Elastic Search ###
+### ElasticSearch ###
 
 ElasticSearch is an open source search engine built on top of the open
 source Lucene text indexing and retrieval system. ES provides two APIs
@@ -54,9 +55,9 @@ we'll be using: one for adding a document to the search index (in our
 case the documents are listings) and another for querying for
 documents (how we look up documents that match a user query).
 
-Another thing to note is that Elasticsearch 7 offers a new clustering 
+Another thing to note is that ElasticSearch 7 offers a new clustering 
 methodology, and this may require modifying some system variables. If
-the Elasticsearch container prematurely shuts down, please review the
+the ElasticSearch container prematurely shuts down, please review the
 set-up docs [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html).
 
 ### Search Indexer ###
@@ -95,7 +96,7 @@ of the item into account.
 
 ### Access Log ###
 
-To keep track of the number of views each item has, we will create a log file that keeps track of which users view which item. The access log should be in the form of a file with two columns of values where each row consists of a user-id and an item-id representing an item page view by a logged in user. Similar to the new listing implementation, every time a page view occurs you will need to push the two relevant values (user-id and item-id) to Kafka from the experience layer and have another batch container/script consume the page-view and write/append it to the aforementioned running log file. To get this data into Elasticsearch, you will have a python file within your batch container that periodically parses the access log, counts the number of views for each listing, and updates the view count for each listing in Elasticsearch.
+To keep track of the number of views each item has, we will create a log file that keeps track of which users view which item. The access log should be in the form of a file with two columns of values where each row consists of a `user-id` and an `item-id` representing an item page view by a logged in user. Similar to the new listing implementation, every time a page view occurs you will need to push the two relevant values (`user-id` and `item-id`) to Kafka from the experience layer and have another batch container/script consume the page-view and write/append it to the aforementioned running log file. To get this data into ElasticSearch, you will have a python file within your batch container that periodically parses the access log, counts the number of views for each listing, and updates the view count for each listing in ElasticSearch.
 
 
 Implementation
@@ -103,10 +104,9 @@ Implementation
 
 You will be adding three new containers to your application:
 
-   - ElasticSearch based on the 'elasticsearch:7.4.0' image on Dockerhub
-   - Kafka based on the 'spotify/kafka' image on Dockerhub. Keep in mind that despite the name
-   the image is really Kafka, ZooKeeper and all the configurations to make them work together.
-   - The backend search indexer called batch based on tp33/django image on Dockerhub (kafka-python upgraded) whose only job is to run a python script that pulls new listing messages from Kafka and indexes them in ES, a python script that pulls item viewing messages from Kafka and appends them to a log, and a python script that periodically parses the log and updates the view counts in ES.
+   - ElasticSearch based on the `elasticsearch:7.4.0` image on Docker Hub
+   - Kafka based on the `spotify/kafka` image on Docker Hub. Keep in mind that despite the name the image is really Kafka, ZooKeeper, and all the configurations to make them work together.
+   - The backend search indexer called `batch` based on `tp33/django` image on Docker Hub (kafka-python upgraded) whose only job is to run a python script that pulls new listing messages from Kafka and indexes them in ES, a python script that pulls item viewing messages from Kafka and appends them to a log, and a python script that periodically parses the log and updates the view counts in ES.
 
 You can download and run the new Kafka and ES containers like:
 
@@ -144,7 +144,7 @@ batch:
 These images may take a few minutes to download as you're pulling down different Java versions for each, dependent apps like Zookeeper, and the main ES and Kafka apps themselves. Still, a lot easier than building and installing all the tools and depencies from source!
 
 Make sure to keep the container names as I used here unless you want
-to figure out the nuances of Kafka and it's dependent Zookeeper
+to figure out the nuances of Kafka and its dependent Zookeeper
 configuration :)
 
 And let's start a container to try out ES and Kafka:
@@ -173,15 +173,15 @@ Type "help", "copyright", "credits" or "license" for more information.
 {'_shards': {'successful': 1, 'failed': 0, 'total': 1, 'skipped': 0}, 'hits': {'hits': [{'_index': 'listing_index', '_type': 'listing', '_score': 0.2745185, '_source': {'title': 'Used MacbookAir 13"', 'description': 'This is a used Macbook Air in great condition', 'id': 42, 'visits': 1}, '_id': '42'}], 'max_score': 0.2745185, 'total': {'relation': 'eq', 'value': 1}}, 'took': 62, 'timed_out': False}
 ```
    
-In the example above with ES, we are indexing a JSON document with a title, description and listing id field. ES will by default index whatever fields in whatever documents we give it. The `es.index()` call is specifying that we index the documents using an index called 'listing_index'. Since this index doesn't exist, ES will create it.
+In the example above with ES, we are indexing a JSON document with a title, description and listing id field. ES will by default index whatever fields in whatever documents we give it. The `es.index()` call is specifying that we index the documents using an index called `'listing_index'`. Since this index doesn't exist, ES will create it.
 
-Then we call `es.indices.refresh()` on listing_index. Until this is done, ES hasn't actually comitted the changes to the index files and thus queries won't 'see' the new documents. This is a speed optimization ES does allowing many new documents to be added and then the index files only updated once.
+Then we call `es.indices.refresh()` on `listing_index`. Until this is done, ES hasn't actually comitted the changes to the index files and thus queries won't 'see' the new documents. This is a speed optimization ES does allowing many new documents to be added and then the index files only updated once.
 
-Next, there's an example of calling `es.search()` to query the listing_index for documents that match the query 'macbook air'. We're also specifying that we only want the top 10 results returned. The matches, if any, are returned in the response's `['hits']['hits']` array. Note that the 'id' of each hit matches the id we passed in when indexing the document. We're using the DB assigned primary key id when indexing and so this allows our experience code to quickly look up the corresponding listing from the db by it's primary key at query time.
+Next, there's an example of calling `es.search()` to query the listing_index for documents that match the query `'macbook air'`. We're also specifying that we only want the top 10 results returned. The matches, if any, are returned in the response's `['hits']['hits']` array. Note that the `'id'` of each hit matches the id we passed in when indexing the document. We're using the DB assigned primary key id when indexing and so this allows our experience code to quickly look up the corresponding listing from the db by its primary key at query time.
 
 Finally, we use `es.update()` to add the `visits` field into the document and increment it. We then call `es.search()` with a custom ranking function. In our example, the `query` and `field_value_factor` both return scores, which are then multiplied by each other to return the overall score. As you can see, the score for the listing retreived by the second search is different from the first. You can see more function examples [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-function-score-query.html). 
 
-And test out adding messages to a Kafka queue via 'KafkaProducer':
+And test out adding messages to a Kafka queue via `KafkaProducer`:
 
 ``` PYTHON
 >>> from kafka import KafkaProducer
@@ -192,9 +192,9 @@ And test out adding messages to a Kafka queue via 'KafkaProducer':
 <kafka.producer.future.FutureRecordMetadata object at 0x7f9df5a71780>
 ```
    
-We're queing up a message via producer.send which takes a message (in this case a JSON doument in bytes) and a topic name (in this case 'new-listings-topic'). The KafkaProducer is in asynchronous mode by default. The returned value shows that the message was queued up asynchronously (The message may NOT be in the queue yet when the value returns).
+We're queueing up a message via `producer.send` which takes a message (in this case a JSON doument in bytes) and a topic name (in this case `'new-listings-topic'`). The `KafkaProducer` is in asynchronous mode by default. The returned value shows that the message was queued up asynchronously. (The message may NOT be in the queue yet when the value returns.)
 
-And test our receiving messages from Kafka (To see messages sent, you need to start another terminal session that connects to the batch_test container. Recall the command `docker exec -it batch_test bash`):
+And test our receiving messages from Kafka (To see messages sent, you need to start another terminal session that connects to the `batch_test` container. Recall the command `docker exec -it batch_test bash`):
    
 ``` PYTHON
 >>> from kafka import KafkaConsumer
@@ -204,14 +204,9 @@ And test our receiving messages from Kafka (To see messages sent, you need to st
 ...   print(json.loads((message.value).decode('utf-8')))
 ```
 
-Here we're showing an example of a consumer reading messages from the 'new-listings-topic' topic. The consumer is part of the 'listings-indexer' consumer group. Each topic can have multiple groups of consumer reading messages. Each message will be delivered exactly once to SOME member of each group. That is, if there are three clients consuming messages from this topic and all are part of the same group, only one of the three clients will get any given message. This functionality is built to support scaling up the number of consumers. For example, if you had millions of new listings being created per day you might want more than one consumer reading the new listing messages and adding them to ES. However, you'd want to make sure that each new listing was only added to ES once.
+Here we're showing an example of a consumer reading messages from the `'new-listings-topic'` topic. The consumer is part of the `'listings-indexer'` consumer group. Each topic can have multiple groups of consumer reading messages. Each message will be delivered exactly once to SOME member of each group. That is, if there are three clients consuming messages from this topic and all are part of the same group, only one of the three clients will get any given message. This functionality is built to support scaling up the number of consumers. For example, if you had millions of new listings being created per day you might want more than one consumer reading the new listing messages and adding them to ES. However, you'd want to make sure that each new listing was only added to ES once.
 
-The other thing to be aware of is that by default, the first
-time a consumer connects it will only receive messages sent AFTER that
-point. So in the example above where you use the producer to send a message and then
-start a client to read the messages, the client will hang waiting for a new message. To see the client
-actually receive a message you'll need to open two shells, run the producer and consumer simultaneously
-and then should see the consumer receive messages from the sender.
+The other thing to be aware of is that by default, the first time a consumer connects it will only receive messages sent AFTER that point. So in the example above where you use the producer to send a message and then start a client to read the messages, the client will hang waiting for a new message. To see the client actually receive a message you'll need to open two shells, run the producer and consumer simultaneously and then should see the consumer receive messages from the sender.
 
 Use the code snippets above to implement the python scripts that sits in the batch container. Again, all that script does is just pulling messages from Kafka and index the message in ES!
 

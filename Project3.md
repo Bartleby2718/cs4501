@@ -23,7 +23,7 @@ An example request will be processed as follows:
 
 - A request from a user's browser will go to the HTML front end.
 - The front-end will call the experience service to get the data needed and render the data as HTML.
-- The experience service will call one or more of the entity APIs to get it's data and return it.
+- The experience service will call one or more of the entity APIs to get its data and return it.
 - The entity APIs will call the database to read data and update models.
 
 The experience service app will invoke the entity APIs via HTTP and
@@ -189,7 +189,7 @@ so your `models` container can connect to it.
 We add the `models` container to another network here known as the `service_mesh` network. 
 This is where your experience container and all other service related containers will reside. 
 The reason your `models` container needs to be on this network 
-is so that your experience container will be able to communicate with by sending HTML requests.
+is so that your experience container will be able to communicate with by sending HTTP requests.
 
 Similarly, you'll add another container for your experience service
 and link it to two networks as well.
